@@ -1,5 +1,4 @@
 "use client";
-import { clientId, clientSecret } from "@/secrets";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
@@ -34,7 +33,7 @@ export default function Home() {
 
   const onGetAuthToken = async () => {
     await fetch(
-      `https://graph.threads.net/oauth/access_token?client_id=${clientId}&client_secret=${clientSecret}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
+      `https://graph.threads.net/oauth/access_token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
     )
       .then(async (data) => {
         const res = await data.json();
@@ -47,7 +46,7 @@ export default function Home() {
 
   const onLogin = () => {
     window.open(
-      `https://threads.net/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=threads_basic&response_type=code`,
+      `https://threads.net/oauth/authorize?client_id=${process.env.CLIENT_ID}&redirect_uri=${redirectUri}&scope=threads_basic&response_type=code`,
       "_parent"
     );
   };
