@@ -14,7 +14,7 @@ import {
   View,
 } from "./config";
 
-const redirectUri = process.env.REDIRECT_URI as string;
+const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI as string;
 
 export default function Home() {
   const router = useRouter();
@@ -26,14 +26,12 @@ export default function Home() {
   const [fetching, setFetching] = useState(false);
   const [breakdown, setBreakdown] = useState<Breakdown>("country");
 
-  console.log({ stats });
-
   const isLoggedIn = Boolean(authCode) || Boolean(accessToken);
   const hasToken = Boolean(accessToken);
 
   const onGetAuthToken = async () => {
     await fetch(
-      `https://graph.threads.net/oauth/access_token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
+      `https://graph.threads.net/oauth/access_token?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
     )
       .then(async (data) => {
         const res = await data.json();
@@ -46,7 +44,7 @@ export default function Home() {
 
   const onLogin = () => {
     window.open(
-      `https://threads.net/oauth/authorize?client_id=${process.env.CLIENT_ID}&redirect_uri=${redirectUri}&scope=threads_basic&response_type=code`,
+      `https://threads.net/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&redirect_uri=${redirectUri}&scope=threads_basic&response_type=code`,
       "_parent"
     );
   };
@@ -73,7 +71,6 @@ export default function Home() {
   };
 
   const mapData = (data: ThreadsData): MappedResponse => {
-    console.log("incoming data", data);
     switch (data.name) {
       case "views": {
         return {
