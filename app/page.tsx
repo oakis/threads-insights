@@ -1,113 +1,120 @@
+"use client";
+import { clientId, clientSecret } from "@/secrets";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ReactEventHandler, useState } from "react";
+
+const breakdowns = ["country", "city", "age", "gender"];
+
+const metrics = [
+  "views",
+  "likes",
+  "replies",
+  "reposts",
+  "quotes",
+  "followers_count",
+  "follower_demographics",
+] as const;
+
+type Breakdown = (typeof breakdowns)[number];
+type Metric = (typeof metrics)[number];
+
+const redirectUri = "https://localhost:3000/";
 
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const authCode = searchParams.get("code");
+  const [accessToken, setAccessToken] = useState("");
+  const [userId, setUserId] = useState("");
+  const [isAuthing, setIsAuthing] = useState(false);
+  const [metric, setMetric] = useState<Metric>("views");
+  const [breakdown, setBreakdown] = useState<Breakdown>("country");
+
+  const isAuthenticated = Boolean(accessToken);
+
+  console.log({ isAuthenticated, accessToken, userId });
+
+  const onGetAuthToken = async () => {
+    setIsAuthing(true);
+    await fetch(
+      `https://graph.threads.net/oauth/access_token?client_id=${clientId}&client_secret=${clientSecret}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
+    )
+      .then(async (data) => {
+        const res = await data.json();
+        setAccessToken(res.access_token);
+        setUserId(res.user_id);
+        router.replace(redirectUri);
+      })
+      .catch((e) => console.error(e))
+      .finally(() => {
+        setIsAuthing(false);
+      });
+  };
+
+  const onLogin = () => {
+    window.open(
+      `https://threads.net/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=threads_basic&response_type=code`,
+      "_parent"
+    );
+  };
+
+  const onGetProfileInfo = async () => {
+    const data = await fetch(
+      `https://graph.threads.net/v1.0/me?fields=id,name&access_token=${accessToken}&scope=threads_basic`
+    )
+      .then((data) => data.json())
+      .catch((e) => console.error(e));
+    console.log(data);
+    if (data) {
+      setUserId(data.id);
+    }
+  };
+
+  const onFetchInsights = async () => {
+    if (!accessToken) return console.error("accessToken missing");
+    const url =
+      metric === "follower_demographics"
+        ? `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${metric}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`
+        : `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${metric}&access_token=${accessToken}&since=1717279200`;
+    const data = await fetch(url)
+      .then((data) => data.json())
+      .catch((e) => console.error(e));
+    console.log(data);
+  };
+
+  const onSelectMetric = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setMetric(event.target.value as Metric);
+  };
+
+  const onSelectBreakdown = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setBreakdown(event.target.value);
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen flex-col items-center p-24 gap-8">
+      <button onClick={onLogin}>Login</button>
+      <button onClick={onGetAuthToken}>Get Auth Token</button>
+      <button onClick={onGetProfileInfo}>Fetch profile info</button>
+      <div>
+        <label htmlFor="metrics">Select metrics: </label>
+        <select onChange={onSelectMetric} id="metrics">
+          {metrics.map((a) => (
+            <option key={a}>{a}</option>
+          ))}
+        </select>
+      </div>
+      {metric === "follower_demographics" && (
+        <div>
+          <label htmlFor="breakdown">Select breakdown: </label>
+          <select onChange={onSelectBreakdown} id="breakdown">
+            {breakdowns.map((a) => (
+              <option key={a}>{a}</option>
+            ))}
+          </select>
         </div>
-      </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      )}
+      <button onClick={onFetchInsights}>Fetch insights</button>
     </main>
   );
 }
