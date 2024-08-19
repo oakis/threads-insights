@@ -1,8 +1,7 @@
 "use client";
 import { clientId, clientSecret } from "@/secrets";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ReactEventHandler, useState } from "react";
+import { useState } from "react";
 
 const breakdowns = ["country", "city", "age", "gender"];
 
@@ -27,7 +26,6 @@ export default function Home() {
   const authCode = searchParams.get("code");
   const [accessToken, setAccessToken] = useState("");
   const [userId, setUserId] = useState("");
-  const [isAuthing, setIsAuthing] = useState(false);
   const [metric, setMetric] = useState<Metric>("views");
   const [breakdown, setBreakdown] = useState<Breakdown>("country");
 
@@ -36,7 +34,6 @@ export default function Home() {
   console.log({ isAuthenticated, accessToken, userId });
 
   const onGetAuthToken = async () => {
-    setIsAuthing(true);
     await fetch(
       `https://graph.threads.net/oauth/access_token?client_id=${clientId}&client_secret=${clientSecret}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
     )
@@ -48,7 +45,6 @@ export default function Home() {
       })
       .catch((e) => console.error(e))
       .finally(() => {
-        setIsAuthing(false);
       });
   };
 
