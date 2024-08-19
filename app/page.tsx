@@ -14,7 +14,7 @@ import {
   View,
 } from "./config";
 
-const redirectUri = "https://localhost:3000/";
+const redirectUri = process.env.REDIRECT_URI as string;
 
 export default function Home() {
   const router = useRouter();
