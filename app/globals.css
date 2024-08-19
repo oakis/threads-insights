@@ -34,6 +34,10 @@ h1 {
   text-transform: capitalize;
 }
 
+h3 {
+  text-transform: capitalize;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

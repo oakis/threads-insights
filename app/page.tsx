@@ -2,55 +2,18 @@
 import { clientId, clientSecret } from "@/secrets";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-
-const breakdowns = ["country", "city", "age", "gender"];
-
-const metrics = [
-  "views",
-  "likes",
-  "replies",
-  "reposts",
-  "quotes",
-  "followers_count",
-  "follower_demographics",
-] as const;
-
-type Breakdown = (typeof breakdowns)[number];
-type Metric = (typeof metrics)[number];
-
-interface ViewValue {
-  value: number;
-  end_time: string;
-}
-
-interface View {
-  name: string;
-  period: string;
-  values: ViewValue[];
-  title: string;
-  description: string;
-  id: string;
-}
-
-interface Like {
-  description: string;
-  id: string;
-  name: string;
-  period: string;
-  title: string;
-  total_value: { value: number };
-}
-
-interface ThreadsData {
-  data: Array<View | Like>;
-  paging: unknown;
-}
-
-interface MappedResponse {
-  title: string;
-  desc: string;
-  total: number;
-}
+import {
+  allMetrics,
+  Breakdown,
+  breakdowns,
+  Demographics,
+  MappedResponse,
+  Metric,
+  SimpleResponse,
+  ThreadsData,
+  ThreadsResponse,
+  View,
+} from "./config";
 
 const redirectUri = "https://localhost:3000/";
 
@@ -60,14 +23,11 @@ export default function Home() {
   const authCode = searchParams.get("code");
   const [accessToken, setAccessToken] = useState("");
   const [userId, setUserId] = useState("");
-  const [metric, setMetric] = useState<Metric>("views");
-  const [breakdown, setBreakdown] = useState<Breakdown>("country");
-  const [stats, setStats] = useState<MappedResponse>({
-    desc: "",
-    title: "",
-    total: 0,
-  });
+  const [stats, setStats] = useState<MappedResponse[] | null>(null);
   const [fetching, setFetching] = useState(false);
+  const [breakdown, setBreakdown] = useState<Breakdown>("country");
+
+  console.log({ stats });
 
   const isLoggedIn = Boolean(authCode) || Boolean(accessToken);
   const hasToken = Boolean(accessToken);
@@ -92,60 +52,72 @@ export default function Home() {
     );
   };
 
-  // const onGetProfileInfo = async () => {
-  //   const data = await fetch(
-  //     `https://graph.threads.net/v1.0/me?fields=id,name&access_token=${accessToken}&scope=threads_basic`
-  //   )
-  //     .then((data) => data.json())
-  //     .catch((e) => console.error(e));
-  //   console.log(data);
-  //   if (data) {
-  //     setUserId(data.id);
-  //   }
-  // };
+  const mapTitle = (str: Metric): string => {
+    switch (str) {
+      case "views":
+        return `${str} 👀`;
+      case "likes":
+        return `${str} ❤️`;
+      case "replies":
+        return `${str} ↩️`;
+      case "reposts":
+        return `${str} 🔁`;
+      case "quotes":
+        return `${str} 📃`;
+      case "followers_count":
+        return `${str} 🧮`;
+      case "follower_demographics":
+        return `${str} 🏠👨👩`;
+      default:
+        return str;
+    }
+  };
 
   const mapData = (data: ThreadsData): MappedResponse => {
     console.log("incoming data", data);
-    switch (metric) {
+    switch (data.name) {
       case "views": {
-        const values = data.data[0] as View;
         return {
-          title: `${values.title} 👀`,
-          desc: values.description,
-          total: values.values.reduce((prev, curr) => prev + curr.value, 0),
+          title: mapTitle(data.name),
+          desc: data.description,
+          total: (data as View).values.reduce(
+            (prev, curr) => prev + curr.value,
+            0
+          ),
         };
       }
-      case "likes": {
-        const values = data.data[0] as Like;
+      case "follower_demographics": {
+        const breakdown = (data as Demographics).total_value.breakdowns[0];
         return {
-          title: `${values.title} ❤️`,
-          desc: values.description,
-          total: values.total_value.value,
+          title: mapTitle(data.name),
+          desc: data.description,
+          subTitle: breakdown.dimension_keys[0],
+          subValues: breakdown.results.map((res) => ({
+            title: res.dimension_values[0],
+            value: res.value.toString(),
+          })),
         };
       }
       default:
-        return data as any;
+        return {
+          title: mapTitle(data.name),
+          desc: data.description,
+          total: (data as SimpleResponse).total_value.value,
+        };
     }
   };
 
   const onFetchInsights = async () => {
     if (!accessToken) return console.error("accessToken missing");
     setFetching(true);
-    const url =
-      metric === "follower_demographics"
-        ? `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${metric}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`
-        : `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${metric}&access_token=${accessToken}&since=1717279200`;
-    const data = await fetch(url)
+    const url = `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${allMetrics}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`;
+    const data: ThreadsResponse = await fetch(url)
       .then((data) => data.json())
       .catch((e) => console.error(e))
       .finally(() => {
         setFetching(false);
       });
-    setStats(mapData(data));
-  };
-
-  const onSelectMetric = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setMetric(event.target.value as Metric);
+    setStats(data.data.map((x) => mapData(x)));
   };
 
   const onSelectBreakdown = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -159,38 +131,44 @@ export default function Home() {
         <button onClick={onGetAuthToken}>{`Get Auth Token${
           hasToken ? " ✔️" : ""
         }`}</button>
+        <button onClick={onFetchInsights} disabled={fetching}>
+          {`${fetching ? "Loading..." : "Fetch insights"}`}
+        </button>
       </div>
-      {/* <button onClick={onGetProfileInfo}>Fetch profile info</button> */}
       <div>
-        <label htmlFor="metrics">Select metrics: </label>
-        <select onChange={onSelectMetric} id="metrics">
-          {metrics.map((a) => (
+        <label htmlFor="breakdown">Select breakdown: </label>
+        <select onChange={onSelectBreakdown} id="breakdown">
+          {breakdowns.map((a) => (
             <option key={a}>{a}</option>
           ))}
         </select>
       </div>
-      {metric === "follower_demographics" && (
-        <div>
-          <label htmlFor="breakdown">Select breakdown: </label>
-          <select onChange={onSelectBreakdown} id="breakdown">
-            {breakdowns.map((a) => (
-              <option key={a}>{a}</option>
-            ))}
-          </select>
-        </div>
-      )}
-      <button onClick={onFetchInsights} disabled={fetching}>
-        {`${fetching ? "Loading..." : "Fetch insights"}`}
-      </button>
-      <div>
-        <h1>{stats.title}</h1>
-        <p>{stats.desc}</p>
-        <p>
-          {stats.total.toLocaleString("sv-SE", {
-            unitDisplay: "long",
-            style: "decimal",
-          })}
-        </p>
+      <div className="flex flex-left flex-col gap-8">
+        {stats?.map(({ title, desc, total, subTitle, subValues }) => (
+          <div key={title}>
+            <h1>{title.replace("_", " ")}</h1>
+            <p>{desc}</p>
+            {total && (
+              <p className="font-bold">
+                {total.toLocaleString("sv-SE", {
+                  unitDisplay: "long",
+                  style: "decimal",
+                })}
+              </p>
+            )}
+            {subTitle && subValues && (
+              <div>
+                <h3 className="font-bold">{subTitle}</h3>
+                {subValues.map((sv) => (
+                  <div key={sv.title} className="flex">
+                    <h4 className="italic basis-1/2">{sv.title}: </h4>
+                    <span className="font-bold basis-1/2">{sv.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </main>
   );
