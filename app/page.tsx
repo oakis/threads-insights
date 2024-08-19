@@ -18,6 +18,40 @@ const metrics = [
 type Breakdown = (typeof breakdowns)[number];
 type Metric = (typeof metrics)[number];
 
+interface ViewValue {
+  value: number;
+  end_time: string;
+}
+
+interface View {
+  name: string;
+  period: string;
+  values: ViewValue[];
+  title: string;
+  description: string;
+  id: string;
+}
+
+interface Like {
+  description: string;
+  id: string;
+  name: string;
+  period: string;
+  title: string;
+  total_value: { value: number };
+}
+
+interface ThreadsData {
+  data: Array<View | Like>;
+  paging: unknown;
+}
+
+interface MappedResponse {
+  title: string;
+  desc: string;
+  total: number;
+}
+
 const redirectUri = "https://localhost:3000/";
 
 export default function Home() {
@@ -28,10 +62,15 @@ export default function Home() {
   const [userId, setUserId] = useState("");
   const [metric, setMetric] = useState<Metric>("views");
   const [breakdown, setBreakdown] = useState<Breakdown>("country");
+  const [stats, setStats] = useState<MappedResponse>({
+    desc: "",
+    title: "",
+    total: 0,
+  });
+  const [fetching, setFetching] = useState(false);
 
-  const isAuthenticated = Boolean(accessToken);
-
-  console.log({ isAuthenticated, accessToken, userId });
+  const isLoggedIn = Boolean(authCode) || Boolean(accessToken);
+  const hasToken = Boolean(accessToken);
 
   const onGetAuthToken = async () => {
     await fetch(
@@ -43,9 +82,7 @@ export default function Home() {
         setUserId(res.user_id);
         router.replace(redirectUri);
       })
-      .catch((e) => console.error(e))
-      .finally(() => {
-      });
+      .catch((e) => console.error(e));
   };
 
   const onLogin = () => {
@@ -55,28 +92,56 @@ export default function Home() {
     );
   };
 
-  const onGetProfileInfo = async () => {
-    const data = await fetch(
-      `https://graph.threads.net/v1.0/me?fields=id,name&access_token=${accessToken}&scope=threads_basic`
-    )
-      .then((data) => data.json())
-      .catch((e) => console.error(e));
-    console.log(data);
-    if (data) {
-      setUserId(data.id);
+  // const onGetProfileInfo = async () => {
+  //   const data = await fetch(
+  //     `https://graph.threads.net/v1.0/me?fields=id,name&access_token=${accessToken}&scope=threads_basic`
+  //   )
+  //     .then((data) => data.json())
+  //     .catch((e) => console.error(e));
+  //   console.log(data);
+  //   if (data) {
+  //     setUserId(data.id);
+  //   }
+  // };
+
+  const mapData = (data: ThreadsData): MappedResponse => {
+    console.log("incoming data", data);
+    switch (metric) {
+      case "views": {
+        const values = data.data[0] as View;
+        return {
+          title: `${values.title} 👀`,
+          desc: values.description,
+          total: values.values.reduce((prev, curr) => prev + curr.value, 0),
+        };
+      }
+      case "likes": {
+        const values = data.data[0] as Like;
+        return {
+          title: `${values.title} ❤️`,
+          desc: values.description,
+          total: values.total_value.value,
+        };
+      }
+      default:
+        return data as any;
     }
   };
 
   const onFetchInsights = async () => {
     if (!accessToken) return console.error("accessToken missing");
+    setFetching(true);
     const url =
       metric === "follower_demographics"
         ? `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${metric}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`
         : `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${metric}&access_token=${accessToken}&since=1717279200`;
     const data = await fetch(url)
       .then((data) => data.json())
-      .catch((e) => console.error(e));
-    console.log(data);
+      .catch((e) => console.error(e))
+      .finally(() => {
+        setFetching(false);
+      });
+    setStats(mapData(data));
   };
 
   const onSelectMetric = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -89,9 +154,13 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24 gap-8">
-      <button onClick={onLogin}>Login</button>
-      <button onClick={onGetAuthToken}>Get Auth Token</button>
-      <button onClick={onGetProfileInfo}>Fetch profile info</button>
+      <div className="flex gap-4">
+        <button onClick={onLogin}>{`Login${isLoggedIn ? " ✔️" : ""}`}</button>
+        <button onClick={onGetAuthToken}>{`Get Auth Token${
+          hasToken ? " ✔️" : ""
+        }`}</button>
+      </div>
+      {/* <button onClick={onGetProfileInfo}>Fetch profile info</button> */}
       <div>
         <label htmlFor="metrics">Select metrics: </label>
         <select onChange={onSelectMetric} id="metrics">
@@ -110,7 +179,19 @@ export default function Home() {
           </select>
         </div>
       )}
-      <button onClick={onFetchInsights}>Fetch insights</button>
+      <button onClick={onFetchInsights} disabled={fetching}>
+        {`${fetching ? "Loading..." : "Fetch insights"}`}
+      </button>
+      <div>
+        <h1>{stats.title}</h1>
+        <p>{stats.desc}</p>
+        <p>
+          {stats.total.toLocaleString("sv-SE", {
+            unitDisplay: "long",
+            style: "decimal",
+          })}
+        </p>
+      </div>
     </main>
   );
 }

@@ -6,6 +6,7 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 200, 200, 220;
   --background-end-rgb: 255, 255, 255;
+  --button-bg: 225, 225, 225;
 }
 
 body {
@@ -16,6 +17,21 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+}
+
+button,
+select {
+  background-color: rgb(var(--button-bg));
+  border: 1px solid rgb(var(--foreground-rgb));
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-transform: capitalize;
+}
+
+h1 {
+  font-size: 1.5em;
+  font-weight: bold;
+  text-transform: capitalize;
 }
 
 @layer utilities {
