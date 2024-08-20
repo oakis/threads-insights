@@ -13,7 +13,7 @@ export const metrics = [
 export const allMetrics = metrics.join(",");
 
 export type Breakdown = (typeof breakdowns)[number];
-export type Metric = (typeof metrics)[number] | "all";
+export type Metric = (typeof metrics)[number];
 
 export interface View {
   name: Metric;

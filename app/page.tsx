@@ -8,6 +8,7 @@ import {
   Demographics,
   MappedResponse,
   Metric,
+  metrics,
   SimpleResponse,
   ThreadsData,
   ThreadsResponse,
@@ -33,9 +34,11 @@ export default function Home() {
   const [stats, setStats] = useState<MappedResponse[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [breakdown, setBreakdown] = useState<Breakdown>("country");
+  const [currentMetrics, setCurrentMetrics] = useState(allMetrics);
 
   const isLoggedIn = Boolean(authCode) || Boolean(accessToken);
   const hasToken = Boolean(accessToken);
+  const hasDemographics = currentMetrics.includes("follower_demographics");
 
   const onGetAuthToken = async () => {
     await fetch(
@@ -119,7 +122,9 @@ export default function Home() {
   const onFetchInsights = async () => {
     if (!accessToken) return console.error("accessToken missing");
     setFetching(true);
-    const url = `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${allMetrics}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`;
+    const url = `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${currentMetrics}&access_token=${accessToken}&since=1717279200${
+      hasDemographics ? `&breakdown=${breakdown}` : ""
+    }`;
     const data: ThreadsResponse = await fetch(url)
       .then((data) => data.json())
       .finally(() => {
@@ -136,8 +141,18 @@ export default function Home() {
     setBreakdown(event.target.value);
   };
 
+  const onSelectMetrics = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = event.target.value;
+    if (currentMetrics.includes(incoming)) {
+      setCurrentMetrics(currentMetrics.replace(`,${incoming}`, ""));
+    } else {
+      setCurrentMetrics(`${currentMetrics},${incoming}`);
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8">
+      <p>Start by logging in with your Threads connected Instagram account. Then press <b>Get Auth Token</b>. Now you are free to choose what metrics you want to see. Keep in mind that <b>Follower demographics</b> requires at least 100 followers.</p>
       <div className="flex gap-4">
         <button onClick={onLogin} disabled={isLoggedIn}>{`Login${
           isLoggedIn ? " ✔️" : ""
@@ -146,22 +161,45 @@ export default function Home() {
           onClick={onGetAuthToken}
           disabled={hasToken || !isLoggedIn}
         >{`Get Auth Token${hasToken ? " ✔️" : ""}`}</button>
+      </div>
+      <div className="flex gap-4">
+        {metrics.map((metric) => (
+          <span key={metric} className="flex gap-1">
+            <input
+              id={metric}
+              type="checkbox"
+              value={metric}
+              onChange={onSelectMetrics}
+              checked={currentMetrics.includes(metric)}
+            />
+            <label htmlFor={metric}>
+              {metric.charAt(0).toUpperCase() +
+                metric.replace("_", " ").slice(1)}
+            </label>
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-row gap-8">
+        {hasDemographics && (
+          <div>
+            <label htmlFor="breakdown">Select Demographic: </label>
+            <select onChange={onSelectBreakdown} id="breakdown">
+              {breakdowns.map((a) => (
+                <option key={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <button
           onClick={onFetchInsights}
-          disabled={!isLoggedIn || !hasToken || fetching}
+          disabled={
+            !isLoggedIn || !hasToken || fetching || currentMetrics === ""
+          }
         >
           {`${fetching ? "Loading..." : "Show me my statistics"}`}
         </button>
       </div>
-      <div>
-        <label htmlFor="breakdown">Select Demographic: </label>
-        <select onChange={onSelectBreakdown} id="breakdown">
-          {breakdowns.map((a) => (
-            <option key={a}>{a}</option>
-          ))}
-        </select>
-      </div>
-      <div className="flex flex-left flex-col gap-8">
+      <div className="flex  flex-col gap-8">
         {stats?.map(({ title, desc, total, subTitle, subValues }) => (
           <div key={title}>
             <h1>{title.replace("_", " ")}</h1>
