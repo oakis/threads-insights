@@ -39,7 +39,7 @@ export default function Home() {
         setUserId(res.user_id);
         router.replace(redirectUri);
       })
-      .catch((e) => console.error(e));
+      .catch((e) => alert(e));
   };
 
   const onLogin = () => {
@@ -109,7 +109,7 @@ export default function Home() {
     const url = `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${allMetrics}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`;
     const data: ThreadsResponse = await fetch(url)
       .then((data) => data.json())
-      .catch((e) => console.error(e))
+      .catch((e) => alert(e))
       .finally(() => {
         setFetching(false);
       });
@@ -123,16 +123,21 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-24 gap-8">
       <div className="flex gap-4">
-        <button onClick={onLogin}>{`Login${isLoggedIn ? " ✔️" : ""}`}</button>
-        <button onClick={onGetAuthToken}>{`Get Auth Token${
+        <button onClick={onLogin} disabled={isLoggedIn}>{`Login${
+          isLoggedIn ? " ✔️" : ""
+        }`}</button>
+        <button onClick={onGetAuthToken} disabled={hasToken || !isLoggedIn}>{`Get Auth Token${
           hasToken ? " ✔️" : ""
         }`}</button>
-        <button onClick={onFetchInsights} disabled={fetching}>
-          {`${fetching ? "Loading..." : "Fetch insights"}`}
+        <button
+          onClick={onFetchInsights}
+          disabled={!isLoggedIn || !hasToken || fetching}
+        >
+          {`${fetching ? "Loading..." : "Show me my statistics"}`}
         </button>
       </div>
       <div>
-        <label htmlFor="breakdown">Select breakdown: </label>
+        <label htmlFor="breakdown">Select Demographic: </label>
         <select onChange={onSelectBreakdown} id="breakdown">
           {breakdowns.map((a) => (
             <option key={a}>{a}</option>
