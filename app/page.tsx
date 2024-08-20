@@ -16,6 +16,14 @@ import {
 
 const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI as string;
 
+function getFlagEmoji(countryCode: string) {
+  return countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
+    .reduce((a, b) => `${a}${b}`);
+}
+
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,13 +93,16 @@ export default function Home() {
         };
       }
       case "follower_demographics": {
-        const breakdown = (data as Demographics).total_value.breakdowns[0];
+        const current = (data as Demographics).total_value.breakdowns[0];
         return {
           title: mapTitle(data.name),
           desc: data.description,
-          subTitle: breakdown.dimension_keys[0],
-          subValues: breakdown.results.map((res) => ({
-            title: res.dimension_values[0],
+          subTitle: current.dimension_keys[0],
+          subValues: current.results.map((res) => ({
+            title:
+              breakdown === "country"
+                ? getFlagEmoji(res.dimension_values[0])
+                : res.dimension_values[0],
             value: res.value.toString(),
           })),
         };
