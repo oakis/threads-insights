@@ -54,7 +54,7 @@ export default function Home() {
 
   const onLogin = () => {
     window.open(
-      `https://threads.net/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&redirect_uri=${redirectUri}&scope=threads_basic&response_type=code`,
+      `https://threads.net/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&redirect_uri=${redirectUri}&scope=threads_basic,threads_manage_insights&response_type=code`,
       "_parent"
     );
   };
