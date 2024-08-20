@@ -76,4 +76,14 @@ export interface MappedResponse {
 
 export interface ThreadsResponse {
   data: ThreadsData[];
+  error?: {
+    message: string;
+    type: string;
+    code: number;
+    error_subcode: number;
+    is_transient: boolean;
+    error_user_title: string;
+    error_user_msg: string;
+    fbtrace_id: string;
+  };
 }

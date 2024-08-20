@@ -32,14 +32,16 @@ export default function Home() {
   const onGetAuthToken = async () => {
     await fetch(
       `https://graph.threads.net/oauth/access_token?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
-    )
-      .then(async (data) => {
-        const res = await data.json();
+    ).then(async (data) => {
+      const res = await data.json();
+      if (res.error) {
+        alert(res.error.error_user_msg);
+      } else {
         setAccessToken(res.access_token);
         setUserId(res.user_id);
         router.replace(redirectUri);
-      })
-      .catch((e) => alert(e));
+      }
+    });
   };
 
   const onLogin = () => {
@@ -109,11 +111,14 @@ export default function Home() {
     const url = `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${allMetrics}&access_token=${accessToken}&since=1717279200&breakdown=${breakdown}`;
     const data: ThreadsResponse = await fetch(url)
       .then((data) => data.json())
-      .catch((e) => alert(e))
       .finally(() => {
         setFetching(false);
       });
-    setStats(data.data.map((x) => mapData(x)));
+    if (data.error) {
+      alert(data.error.error_user_msg);
+    } else {
+      setStats(data.data.map((x) => mapData(x)));
+    }
   };
 
   const onSelectBreakdown = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -126,9 +131,10 @@ export default function Home() {
         <button onClick={onLogin} disabled={isLoggedIn}>{`Login${
           isLoggedIn ? " ✔️" : ""
         }`}</button>
-        <button onClick={onGetAuthToken} disabled={hasToken || !isLoggedIn}>{`Get Auth Token${
-          hasToken ? " ✔️" : ""
-        }`}</button>
+        <button
+          onClick={onGetAuthToken}
+          disabled={hasToken || !isLoggedIn}
+        >{`Get Auth Token${hasToken ? " ✔️" : ""}`}</button>
         <button
           onClick={onFetchInsights}
           disabled={!isLoggedIn || !hasToken || fetching}
