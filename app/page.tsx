@@ -137,7 +137,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24 gap-8">
+    <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8">
       <div className="flex gap-4">
         <button onClick={onLogin} disabled={isLoggedIn}>{`Login${
           isLoggedIn ? " ✔️" : ""
