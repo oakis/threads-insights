@@ -67,6 +67,7 @@ interface SubValue {
 }
 
 export interface MappedResponse {
+  metric: Metric;
   title: string;
   desc: string;
   total?: number;

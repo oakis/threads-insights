@@ -14,6 +14,8 @@ import {
   ThreadsResponse,
   View,
 } from "./config";
+import Views from "./components/Views";
+import { labelize, readableNumber } from "./utils";
 
 const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI as string;
 
@@ -87,17 +89,23 @@ export default function Home() {
     switch (data.name) {
       case "views": {
         return {
+          metric: data.name,
           title: mapTitle(data.name),
           desc: data.description,
           total: (data as View).values.reduce(
             (prev, curr) => prev + curr.value,
             0
           ),
+          subValues: (data as View).values.map((v) => ({
+            title: v.end_time,
+            value: v.value.toString(),
+          })),
         };
       }
       case "follower_demographics": {
         const current = (data as Demographics).total_value.breakdowns[0];
         return {
+          metric: data.name,
           title: mapTitle(data.name),
           desc: data.description,
           subTitle: current.dimension_keys[0],
@@ -112,6 +120,7 @@ export default function Home() {
       }
       default:
         return {
+          metric: data.name,
           title: mapTitle(data.name),
           desc: data.description,
           total: (data as SimpleResponse).total_value.value,
@@ -150,9 +159,57 @@ export default function Home() {
     }
   };
 
+  const renderStat = ({
+    title,
+    desc,
+    total,
+    subTitle,
+    subValues,
+    metric,
+  }: MappedResponse) => {
+    switch (metric) {
+      case "views":
+        return (
+          <Views
+            key={title}
+            metric={metric}
+            title={title}
+            desc={desc}
+            total={total}
+            subValues={subValues}
+          />
+        );
+
+      default:
+        return (
+          <div key={title}>
+            <h1>{labelize(title)}</h1>
+            <p>{desc}</p>
+            {total && <p className="font-bold">{readableNumber(total)}</p>}
+            {subTitle && subValues && (
+              <div>
+                <h3 className="font-bold">{subTitle}</h3>
+                {subValues.map((sv) => (
+                  <div key={sv.title} className="flex">
+                    <h4 className="italic basis-1/2">{sv.title}: </h4>
+                    <span className="font-bold basis-1/2">{sv.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8">
-      <p>Start by logging in with your Threads connected Instagram account. Then press <b>Get Auth Token</b>. Now you are free to choose what metrics you want to see. Keep in mind that <b>Follower demographics</b> requires at least 100 followers.</p>
+      <p>
+        Start by logging in with your Threads connected Instagram account. Then
+        press <b>Get Auth Token</b>. Now you are free to choose what metrics you
+        want to see. Keep in mind that <b>Follower demographics</b> requires at
+        least 100 followers.
+      </p>
       <div className="flex gap-4">
         <button onClick={onLogin} disabled={isLoggedIn}>{`Login${
           isLoggedIn ? " ✔️" : ""
@@ -172,10 +229,7 @@ export default function Home() {
               onChange={onSelectMetrics}
               checked={currentMetrics.includes(metric)}
             />
-            <label htmlFor={metric}>
-              {metric.charAt(0).toUpperCase() +
-                metric.replace("_", " ").slice(1)}
-            </label>
+            <label htmlFor={metric}>{labelize(metric)}</label>
           </span>
         ))}
       </div>
@@ -199,32 +253,10 @@ export default function Home() {
           {`${fetching ? "Loading..." : "Show me my statistics"}`}
         </button>
       </div>
-      <div className="flex  flex-col gap-8">
-        {stats?.map(({ title, desc, total, subTitle, subValues }) => (
-          <div key={title}>
-            <h1>{title.replace("_", " ")}</h1>
-            <p>{desc}</p>
-            {total && (
-              <p className="font-bold">
-                {total.toLocaleString("sv-SE", {
-                  unitDisplay: "long",
-                  style: "decimal",
-                })}
-              </p>
-            )}
-            {subTitle && subValues && (
-              <div>
-                <h3 className="font-bold">{subTitle}</h3>
-                {subValues.map((sv) => (
-                  <div key={sv.title} className="flex">
-                    <h4 className="italic basis-1/2">{sv.title}: </h4>
-                    <span className="font-bold basis-1/2">{sv.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      <div className="flex flex-col gap-8 w-full">
+        {stats?.map((stat) => renderStat(stat))}
+        <div />
+        {/* Empty div above fixes chart sizing issue */}
       </div>
     </main>
   );
