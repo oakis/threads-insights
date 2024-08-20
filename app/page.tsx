@@ -253,7 +253,7 @@ export default function Home() {
           {`${fetching ? "Loading..." : "Show me my statistics"}`}
         </button>
       </div>
-      <div className="flex flex-col gap-8 w-full">
+      <div className="flex flex-col gap-8 w-full max-h-96">
         {stats?.map((stat) => renderStat(stat))}
         <div />
         {/* Empty div above fixes chart sizing issue */}
