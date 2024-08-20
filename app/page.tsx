@@ -43,7 +43,7 @@ export default function Home() {
     ).then(async (data) => {
       const res = await data.json();
       if (res.error) {
-        alert(res.error.error_user_msg);
+        alert(res.error.error_user_msg ?? res.error.message);
       } else {
         setAccessToken(res.access_token);
         setUserId(res.user_id);
@@ -126,7 +126,7 @@ export default function Home() {
         setFetching(false);
       });
     if (data.error) {
-      alert(data.error.error_user_msg);
+      alert(data.error.error_user_msg ?? data.error.message);
     } else {
       setStats(data.data.map((x) => mapData(x)));
     }
