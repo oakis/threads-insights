@@ -231,7 +231,7 @@ export default function Home() {
           disabled={hasToken || !isLoggedIn}
         >{`Get Auth Token${hasToken ? " ✔️" : ""}`}</button>
       </div>
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
         {metrics.map((metric) => (
           <span key={metric} className="flex gap-1">
             <input

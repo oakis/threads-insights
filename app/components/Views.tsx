@@ -24,18 +24,32 @@ const Views = ({ title, desc, total, subValues, metric }: MappedResponse) => {
       data={data}
       options={{
         plugins: {
-          subtitle: {
-            text: desc,
-          },
           title: {
             display: true,
             color: "#000",
             font: {
-              family: "inter",
+              family: "'Inter', sans-serif",
               size: 24,
               weight: "bold",
             },
-            text: `${labelize(title)} - ${readableNumber(total as number)}`,
+            align: "start",
+            text: labelize(title),
+          },
+          subtitle: {
+            display: true,
+            color: "#000",
+            font: {
+              family: "'Inter', sans-serif",
+              size: 16,
+            },
+            align: "start",
+            text: `${desc} A total of ${readableNumber(
+              total as number
+            )} times.`,
+            padding: {
+              top: 0,
+              bottom: 16,
+            },
           },
           legend: {
             display: false,
