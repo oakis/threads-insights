@@ -11,6 +11,7 @@ import {
   metrics,
   SimpleResponse,
   ThreadsData,
+  ThreadsError,
   ThreadsResponse,
   View,
 } from "./config";
@@ -45,13 +46,13 @@ export default function Home() {
   const onGetAuthToken = async () => {
     await fetch(
       `https://graph.threads.net/oauth/access_token?client_id=${process.env.NEXT_PUBLIC_CLIENT_ID}&client_secret=${process.env.NEXT_PUBLIC_CLIENT_SECRET}&code=${authCode}&grant_type=authorization_code&redirect_uri=${redirectUri}`
-    ).then(async (data) => {
-      const res = await data.json();
-      if (res.error) {
-        alert(res.error.error_user_msg ?? res.error.message);
+    ).then(async (res) => {
+      const data = await res.json();
+      if (data.error) {
+        onError(data.error);
       } else {
-        setAccessToken(res.access_token);
-        setUserId(res.user_id);
+        setAccessToken(data.access_token);
+        setUserId(data.user_id);
         router.replace(redirectUri);
       }
     });
@@ -128,19 +129,30 @@ export default function Home() {
     }
   };
 
+  const onError = (error: ThreadsError): void => {
+    switch (error.code) {
+      case 190:
+        alert("Token has timed out, please log in again");
+        setAccessToken("");
+        setUserId("");
+        break;
+
+      default:
+        alert(error.error_user_msg ?? error.message);
+        break;
+    }
+  };
+
   const onFetchInsights = async () => {
-    if (!accessToken) return console.error("accessToken missing");
+    if (!isLoggedIn) return alert("accessToken missing");
     setFetching(true);
     const url = `https://graph.threads.net/v1.0/${userId}/threads_insights?metric=${currentMetrics}&access_token=${accessToken}&since=1717279200${
       hasDemographics ? `&breakdown=${breakdown}` : ""
     }`;
-    const data: ThreadsResponse = await fetch(url)
-      .then((data) => data.json())
-      .finally(() => {
-        setFetching(false);
-      });
+    const data: ThreadsResponse = await fetch(url).then((data) => data.json());
+    setFetching(false);
     if (data.error) {
-      alert(data.error.error_user_msg ?? data.error.message);
+      onError(data.error);
     } else {
       setStats(data.data.map((x) => mapData(x)));
     }
@@ -203,7 +215,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8">
+    <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8 max-w-4xl">
       <p>
         Start by logging in with your Threads connected Instagram account. Then
         press <b>Get Auth Token</b>. Now you are free to choose what metrics you
@@ -253,7 +265,7 @@ export default function Home() {
           {`${fetching ? "Loading..." : "Show me my statistics"}`}
         </button>
       </div>
-      <div className="flex flex-col gap-8 w-full max-h-96">
+      <div className="flex flex-col gap-8 w-full">
         {stats?.map((stat) => renderStat(stat))}
         <div />
         {/* Empty div above fixes chart sizing issue */}

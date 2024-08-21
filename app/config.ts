@@ -75,16 +75,18 @@ export interface MappedResponse {
   subValues?: SubValue[];
 }
 
+export interface ThreadsError {
+  message: string;
+  type: string;
+  code: number;
+  error_subcode?: number;
+  is_transient?: boolean;
+  error_user_title?: string;
+  error_user_msg?: string;
+  fbtrace_id: string;
+}
+
 export interface ThreadsResponse {
   data: ThreadsData[];
-  error?: {
-    message: string;
-    type: string;
-    code: number;
-    error_subcode?: number;
-    is_transient?: boolean;
-    error_user_title?: string;
-    error_user_msg?: string;
-    fbtrace_id: string;
-  };
+  error?: ThreadsError;
 }
