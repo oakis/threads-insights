@@ -165,7 +165,11 @@ export default function Home() {
   const onSelectMetrics = (event: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = event.target.value;
     if (currentMetrics.includes(incoming)) {
-      setCurrentMetrics(currentMetrics.replace(`,${incoming}`, ""));
+      const newMetrics = currentMetrics
+        .split(",")
+        .filter((metric) => metric !== incoming)
+        .join(",");
+      setCurrentMetrics(newMetrics);
     } else {
       setCurrentMetrics(`${currentMetrics},${incoming}`);
     }
@@ -194,7 +198,7 @@ export default function Home() {
 
       default:
         return (
-          <div key={title}>
+          <div key={title} className="w-1/2">
             <h1>{labelize(title)}</h1>
             <p>{desc}</p>
             {total && <p className="font-bold">{readableNumber(total)}</p>}
@@ -215,7 +219,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8 max-w-4xl">
+    <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8 md:max-w-4xl max-w-full">
       <p>
         Start by logging in with your Threads connected Instagram account. Then
         press <b>Get Auth Token</b>. Now you are free to choose what metrics you
@@ -265,7 +269,7 @@ export default function Home() {
           {`${fetching ? "Loading..." : "Show me my statistics"}`}
         </button>
       </div>
-      <div className="flex flex-col gap-8 w-full">
+      <div className="flex gap-y-8 w-full flex-wrap">
         {stats?.map((stat) => renderStat(stat))}
         <div />
         {/* Empty div above fixes chart sizing issue */}

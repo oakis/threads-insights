@@ -20,43 +20,46 @@ const Views = ({ title, desc, total, subValues, metric }: MappedResponse) => {
     ],
   };
   return (
-    <Line
-      data={data}
-      options={{
-        plugins: {
-          title: {
-            display: true,
-            color: "#000",
-            font: {
-              family: "'Inter', sans-serif",
-              size: 24,
-              weight: "bold",
+    <div className="h-96 w-full">
+      <Line
+        style={{ height: "100%" }}
+        data={data}
+        options={{
+          plugins: {
+            title: {
+              display: true,
+              color: "#000",
+              font: {
+                family: "'Inter', sans-serif",
+                size: 24,
+                weight: "bold",
+              },
+              align: "start",
+              text: labelize(title),
             },
-            align: "start",
-            text: labelize(title),
-          },
-          subtitle: {
-            display: true,
-            color: "#000",
-            font: {
-              family: "'Inter', sans-serif",
-              size: 16,
+            subtitle: {
+              display: true,
+              color: "#000",
+              font: {
+                family: "'Inter', sans-serif",
+                size: 16,
+              },
+              align: "start",
+              text: `${desc} A total of ${readableNumber(
+                total as number
+              )} times.`,
+              padding: {
+                top: 0,
+                bottom: 16,
+              },
             },
-            align: "start",
-            text: `${desc} A total of ${readableNumber(
-              total as number
-            )} times.`,
-            padding: {
-              top: 0,
-              bottom: 16,
+            legend: {
+              display: false,
             },
           },
-          legend: {
-            display: false,
-          },
-        },
-      }}
-    />
+        }}
+      />
+    </div>
   );
 };
 
