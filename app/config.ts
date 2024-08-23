@@ -15,7 +15,7 @@ export const allMetrics = metrics.join(",");
 export type Breakdown = (typeof breakdowns)[number];
 export type Metric = (typeof metrics)[number];
 
-export interface View {
+export interface ViewData {
   name: Metric;
   period: string;
   values: [
@@ -29,7 +29,7 @@ export interface View {
   id: string;
 }
 
-export interface SimpleResponse {
+export interface SimpleData {
   name: Metric;
   period: string;
   title: string;
@@ -38,7 +38,7 @@ export interface SimpleResponse {
   id: string;
 }
 
-export interface Demographics {
+export interface DemographicsData {
   name: Metric;
   period: string;
   title: string;
@@ -59,7 +59,7 @@ export interface Demographics {
   id: string;
 }
 
-export type ThreadsData = View | SimpleResponse | Demographics;
+export type ThreadsData = ViewData | SimpleData | DemographicsData;
 
 interface SubValue {
   title: string;

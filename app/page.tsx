@@ -5,18 +5,19 @@ import {
   allMetrics,
   Breakdown,
   breakdowns,
-  Demographics,
+  DemographicsData,
   MappedResponse,
   Metric,
   metrics,
-  SimpleResponse,
+  SimpleData,
   ThreadsData,
   ThreadsError,
   ThreadsResponse,
-  View,
+  ViewData,
 } from "./config";
 import Views from "./components/Views";
 import { labelize, readableNumber } from "./utils";
+import Demographics from "./components/Demographics";
 
 const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI as string;
 
@@ -93,18 +94,18 @@ export default function Home() {
           metric: data.name,
           title: mapTitle(data.name),
           desc: data.description,
-          total: (data as View).values.reduce(
+          total: (data as ViewData).values.reduce(
             (prev, curr) => prev + curr.value,
             0
           ),
-          subValues: (data as View).values.map((v) => ({
+          subValues: (data as ViewData).values.map((v) => ({
             title: v.end_time,
             value: v.value.toString(),
           })),
         };
       }
       case "follower_demographics": {
-        const current = (data as Demographics).total_value.breakdowns[0];
+        const current = (data as DemographicsData).total_value.breakdowns[0];
         return {
           metric: data.name,
           title: mapTitle(data.name),
@@ -124,7 +125,7 @@ export default function Home() {
           metric: data.name,
           title: mapTitle(data.name),
           desc: data.description,
-          total: (data as SimpleResponse).total_value.value,
+          total: (data as SimpleData).total_value.value,
         };
     }
   };
@@ -195,7 +196,18 @@ export default function Home() {
             subValues={subValues}
           />
         );
-
+      case "follower_demographics":
+        return (
+          <Demographics
+            key={title}
+            metric={metric}
+            title={title}
+            desc={desc}
+            subValues={subValues}
+            subTitle={subTitle}
+            breakdown={breakdown}
+          />
+        );
       default:
         return (
           <div key={title} className="w-1/2">

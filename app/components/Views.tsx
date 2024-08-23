@@ -20,11 +20,12 @@ const Views = ({ title, desc, total, subValues, metric }: MappedResponse) => {
     ],
   };
   return (
-    <div className="h-96 w-full">
+    <div className="md:h-96 w-full h-72">
       <Line
         style={{ height: "100%" }}
         data={data}
         options={{
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
