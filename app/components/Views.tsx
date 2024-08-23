@@ -1,5 +1,5 @@
 import { Line } from "react-chartjs-2";
-import { MappedResponse, ThreadsData, ViewData } from "../config";
+import { ViewData } from "../config";
 import Chart from "chart.js/auto";
 import { LinearScale } from "chart.js";
 import { labelize, mapData, readableNumber } from "../utils";

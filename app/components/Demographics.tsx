@@ -12,6 +12,8 @@ interface IDemographics {
   breakdown: Breakdown;
 }
 
+const maxResults = 6;
+
 const mapResults = (
   results: DemoResults[],
   breakdown: Breakdown
@@ -19,8 +21,9 @@ const mapResults = (
   const returnValue = results;
   if (breakdown !== "age") {
     returnValue.sort((a, b) => b.value - a.value);
+    returnValue.splice(maxResults, results.length - maxResults);
   }
-  return returnValue.toSpliced(5, results.length - 5);
+  return returnValue;
 };
 
 const mapGender = (str: string): string => {
@@ -111,8 +114,8 @@ const Demographics = ({ data, breakdown }: IDemographics) => {
       legend: {
         labels: {
           font: {
-            size: 24
-          }
+            size: 24,
+          },
         },
         display: subTitle === "gender",
       },

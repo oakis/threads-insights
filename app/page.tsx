@@ -6,10 +6,7 @@ import {
   Breakdown,
   breakdowns,
   DemographicsData,
-  MappedResponse,
-  Metric,
   metrics,
-  SimpleData,
   ThreadsData,
   ThreadsError,
   ThreadsResponse,
@@ -140,8 +137,16 @@ export default function Home() {
     }
   };
 
+  const onSelectAll = () => {
+    setCurrentMetrics(allMetrics);
+  };
+
+  const onDeselectAll = () => {
+    setCurrentMetrics("");
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center md:p-24 gap-8 p-8 md:max-w-4xl max-w-full">
+    <main className="flex min-h-screen flex-col items-start md:p-24 gap-8 p-8 md:max-w-4xl max-w-full">
       <p>
         Start by logging in with your Threads connected Instagram account. Then
         press <b>Get Auth Token</b>. Now you are free to choose what metrics you
@@ -161,7 +166,7 @@ export default function Home() {
         <>
           <div className="flex gap-4 flex-wrap">
             {metrics.map((metric) => (
-              <span key={metric} className="flex gap-1">
+              <span key={metric} className="flex gap-1 items-center">
                 <input
                   id={metric}
                   type="checkbox"
@@ -172,8 +177,10 @@ export default function Home() {
                 <label htmlFor={metric}>{labelize(metric)}</label>
               </span>
             ))}
+            <button onClick={onSelectAll}>Select all</button>
+            <button onClick={onDeselectAll}>Unselect all</button>
           </div>
-          <div className="flex flex-row gap-8 flex-start">
+          <div className="flex flex-row gap-8">
             {hasDemographics && (
               <div>
                 <label htmlFor="breakdown">Select Demographic: </label>
@@ -191,8 +198,7 @@ export default function Home() {
                 !isLoggedIn || !hasToken || fetching || currentMetrics === ""
               }
             >
-              Show me my statistics{" "}
-              {fetching && <Spinner />}
+              Show me my statistics {fetching && <Spinner />}
             </button>
           </div>
           <div className="flex gap-y-8 w-full flex-wrap">
