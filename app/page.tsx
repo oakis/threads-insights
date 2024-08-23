@@ -198,7 +198,13 @@ export default function Home() {
                 !isLoggedIn || !hasToken || fetching || currentMetrics === ""
               }
             >
-              Show me my statistics {fetching && <Spinner />}
+              Show me my statistics
+              {fetching && (
+                <>
+                  {" "}
+                  <Spinner />
+                </>
+              )}
             </button>
           </div>
           <div className="flex gap-y-8 w-full flex-wrap">

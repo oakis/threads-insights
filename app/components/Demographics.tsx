@@ -132,7 +132,7 @@ const Demographics = ({ data, breakdown }: IDemographics) => {
     }
   };
 
-  return <div className="max-h-96 w-full">{renderGraph()}</div>;
+  return <div className="max-h-96 min-h-72 w-full">{renderGraph()}</div>;
 };
 
 export default Demographics;
