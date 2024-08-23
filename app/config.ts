@@ -38,6 +38,11 @@ export interface SimpleData {
   id: string;
 }
 
+export interface DemoResults {
+  dimension_values: string[];
+  value: number;
+}
+
 export interface DemographicsData {
   name: Metric;
   period: string;
@@ -47,12 +52,7 @@ export interface DemographicsData {
     breakdowns: [
       {
         dimension_keys: Breakdown[];
-        results: [
-          {
-            dimension_values: string[];
-            value: number;
-          }
-        ];
+        results: DemoResults[];
       }
     ];
   };

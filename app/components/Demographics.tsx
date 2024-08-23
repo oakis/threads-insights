@@ -1,30 +1,73 @@
-import { Bar, Doughnut, Line, Pie } from "react-chartjs-2";
-import { Breakdown, MappedResponse } from "../config";
+import { Bar, Doughnut } from "react-chartjs-2";
+import { Breakdown, DemographicsData, DemoResults } from "../config";
 import Chart from "chart.js/auto";
-import {
-  BarOptions,
-  ChartOptions,
-  ChartTypeRegistry,
-  LinearScale,
-} from "chart.js";
-import { labelize } from "../utils";
+import { ChartOptions, LinearScale } from "chart.js";
+import { labelize, mapData } from "../utils";
 import { useState } from "react";
 
 Chart.register(LinearScale);
 
-interface IDemographics extends MappedResponse {
+interface IDemographics {
+  data: DemographicsData;
   breakdown: Breakdown;
 }
 
-const Demographics = ({
-  title,
-  desc,
-  subValues,
-  metric,
-  subTitle,
-}: IDemographics) => {
-  const data = {
-    labels: subValues?.map((val) => val.title),
+const mapResults = (
+  results: DemoResults[],
+  breakdown: Breakdown
+): DemoResults[] => {
+  const returnValue = results;
+  if (breakdown !== "age") {
+    returnValue.sort((a, b) => b.value - a.value);
+  }
+  return returnValue.toSpliced(5, results.length - 5);
+};
+
+const mapGender = (str: string): string => {
+  switch (str) {
+    case "F":
+      return "👩";
+    case "M":
+      return "👨";
+    case "U":
+      return "🤔";
+    default:
+      return str;
+  }
+};
+
+const Demographics = ({ data, breakdown }: IDemographics) => {
+  const [currentBreakdown] = useState(breakdown);
+
+  const results = mapResults(
+    data.total_value.breakdowns[0].results,
+    currentBreakdown
+  );
+
+  const topSix: DemographicsData = {
+    ...data,
+    total_value: {
+      breakdowns: [
+        {
+          dimension_keys: data.total_value.breakdowns[0].dimension_keys,
+          results,
+        },
+      ],
+    },
+  };
+
+  const { title, desc, subValues, metric, subTitle } = mapData(
+    topSix,
+    currentBreakdown
+  );
+
+  const graphData = {
+    labels: subValues?.map((val) => {
+      if (currentBreakdown === "gender") {
+        return mapGender(val.title);
+      }
+      return val.title.split(",")[0];
+    }),
     datasets: [
       {
         label: labelize(metric),
@@ -38,6 +81,7 @@ const Demographics = ({
 
   const options: ChartOptions<"bar" | "doughnut"> = {
     indexAxis: subTitle === "age" ? "x" : "y",
+    maintainAspectRatio: false,
     plugins: {
       title: {
         display: true,
@@ -65,6 +109,11 @@ const Demographics = ({
         },
       },
       legend: {
+        labels: {
+          font: {
+            size: 24
+          }
+        },
         display: subTitle === "gender",
       },
     },
@@ -73,14 +122,14 @@ const Demographics = ({
   const renderGraph = () => {
     switch (subTitle) {
       case "gender":
-        return <Doughnut style={style} data={data} options={options} />;
+        return <Doughnut style={style} data={graphData} options={options} />;
 
       default:
-        return <Bar style={style} data={data} options={options} />;
+        return <Bar style={style} data={graphData} options={options} />;
     }
   };
 
-  return <div className="h-96 w-full">{renderGraph()}</div>;
+  return <div className="max-h-96 w-full">{renderGraph()}</div>;
 };
 
 export default Demographics;

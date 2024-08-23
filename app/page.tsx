@@ -16,18 +16,11 @@ import {
   ViewData,
 } from "./config";
 import Views from "./components/Views";
-import { labelize, readableNumber } from "./utils";
+import { labelize, mapData, readableNumber } from "./utils";
 import Demographics from "./components/Demographics";
+import { Spinner } from "./components/Spinner";
 
 const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI as string;
-
-function getFlagEmoji(countryCode: string) {
-  return countryCode
-    .toUpperCase()
-    .split("")
-    .map((char) => String.fromCodePoint(127397 + char.charCodeAt(0)))
-    .reduce((a, b) => `${a}${b}`);
-}
 
 export default function Home() {
   const router = useRouter();
@@ -35,7 +28,7 @@ export default function Home() {
   const authCode = searchParams.get("code");
   const [accessToken, setAccessToken] = useState("");
   const [userId, setUserId] = useState("");
-  const [stats, setStats] = useState<MappedResponse[] | null>(null);
+  const [stats, setStats] = useState<ThreadsData[] | null>(null);
   const [fetching, setFetching] = useState(false);
   const [breakdown, setBreakdown] = useState<Breakdown>("country");
   const [currentMetrics, setCurrentMetrics] = useState(allMetrics);
@@ -66,70 +59,6 @@ export default function Home() {
     );
   };
 
-  const mapTitle = (str: Metric): string => {
-    switch (str) {
-      case "views":
-        return `${str} 👀`;
-      case "likes":
-        return `${str} ❤️`;
-      case "replies":
-        return `${str} ↩️`;
-      case "reposts":
-        return `${str} 🔁`;
-      case "quotes":
-        return `${str} 📃`;
-      case "followers_count":
-        return `${str} 🧮`;
-      case "follower_demographics":
-        return `${str} 🏠👨👩`;
-      default:
-        return str;
-    }
-  };
-
-  const mapData = (data: ThreadsData): MappedResponse => {
-    switch (data.name) {
-      case "views": {
-        return {
-          metric: data.name,
-          title: mapTitle(data.name),
-          desc: data.description,
-          total: (data as ViewData).values.reduce(
-            (prev, curr) => prev + curr.value,
-            0
-          ),
-          subValues: (data as ViewData).values.map((v) => ({
-            title: v.end_time,
-            value: v.value.toString(),
-          })),
-        };
-      }
-      case "follower_demographics": {
-        const current = (data as DemographicsData).total_value.breakdowns[0];
-        return {
-          metric: data.name,
-          title: mapTitle(data.name),
-          desc: data.description,
-          subTitle: current.dimension_keys[0],
-          subValues: current.results.map((res) => ({
-            title:
-              breakdown === "country"
-                ? getFlagEmoji(res.dimension_values[0])
-                : res.dimension_values[0],
-            value: res.value.toString(),
-          })),
-        };
-      }
-      default:
-        return {
-          metric: data.name,
-          title: mapTitle(data.name),
-          desc: data.description,
-          total: (data as SimpleData).total_value.value,
-        };
-    }
-  };
-
   const onError = (error: ThreadsError): void => {
     switch (error.code) {
       case 190:
@@ -155,7 +84,7 @@ export default function Home() {
     if (data.error) {
       onError(data.error);
     } else {
-      setStats(data.data.map((x) => mapData(x)));
+      setStats(data.data);
     }
   };
 
@@ -176,39 +105,20 @@ export default function Home() {
     }
   };
 
-  const renderStat = ({
-    title,
-    desc,
-    total,
-    subTitle,
-    subValues,
-    metric,
-  }: MappedResponse) => {
-    switch (metric) {
+  const renderStat = (data: ThreadsData) => {
+    switch (data.name) {
       case "views":
-        return (
-          <Views
-            key={title}
-            metric={metric}
-            title={title}
-            desc={desc}
-            total={total}
-            subValues={subValues}
-          />
-        );
+        return <Views key={data.name} data={data as ViewData} />;
       case "follower_demographics":
         return (
           <Demographics
-            key={title}
-            metric={metric}
-            title={title}
-            desc={desc}
-            subValues={subValues}
-            subTitle={subTitle}
+            key={data.name}
+            data={data as DemographicsData}
             breakdown={breakdown}
           />
         );
       default:
+        const { title, desc, total, subTitle, subValues } = mapData(data);
         return (
           <div key={title} className="w-1/2">
             <h1>{labelize(title)}</h1>
@@ -247,45 +157,51 @@ export default function Home() {
           disabled={hasToken || !isLoggedIn}
         >{`Get Auth Token${hasToken ? " ✔️" : ""}`}</button>
       </div>
-      <div className="flex gap-4 flex-wrap">
-        {metrics.map((metric) => (
-          <span key={metric} className="flex gap-1">
-            <input
-              id={metric}
-              type="checkbox"
-              value={metric}
-              onChange={onSelectMetrics}
-              checked={currentMetrics.includes(metric)}
-            />
-            <label htmlFor={metric}>{labelize(metric)}</label>
-          </span>
-        ))}
-      </div>
-      <div className="flex flex-row gap-8">
-        {hasDemographics && (
-          <div>
-            <label htmlFor="breakdown">Select Demographic: </label>
-            <select onChange={onSelectBreakdown} id="breakdown">
-              {breakdowns.map((a) => (
-                <option key={a}>{a}</option>
-              ))}
-            </select>
+      {hasToken && (
+        <>
+          <div className="flex gap-4 flex-wrap">
+            {metrics.map((metric) => (
+              <span key={metric} className="flex gap-1">
+                <input
+                  id={metric}
+                  type="checkbox"
+                  value={metric}
+                  onChange={onSelectMetrics}
+                  checked={currentMetrics.includes(metric)}
+                />
+                <label htmlFor={metric}>{labelize(metric)}</label>
+              </span>
+            ))}
           </div>
-        )}
-        <button
-          onClick={onFetchInsights}
-          disabled={
-            !isLoggedIn || !hasToken || fetching || currentMetrics === ""
-          }
-        >
-          {`${fetching ? "Loading..." : "Show me my statistics"}`}
-        </button>
-      </div>
-      <div className="flex gap-y-8 w-full flex-wrap">
-        {stats?.map((stat) => renderStat(stat))}
-        <div />
-        {/* Empty div above fixes chart sizing issue */}
-      </div>
+          <div className="flex flex-row gap-8 flex-start">
+            {hasDemographics && (
+              <div>
+                <label htmlFor="breakdown">Select Demographic: </label>
+                <select onChange={onSelectBreakdown} id="breakdown">
+                  {breakdowns.map((a) => (
+                    <option key={a}>{a}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <button
+              className="flex gap-4 flex-center"
+              onClick={onFetchInsights}
+              disabled={
+                !isLoggedIn || !hasToken || fetching || currentMetrics === ""
+              }
+            >
+              Show me my statistics{" "}
+              {fetching && <Spinner />}
+            </button>
+          </div>
+          <div className="flex gap-y-8 w-full flex-wrap">
+            {!fetching && stats?.map((stat) => renderStat(stat))}
+            <div />
+            {/* Empty div above fixes chart sizing issue */}
+          </div>
+        </>
+      )}
     </main>
   );
 }
